@@ -6,30 +6,35 @@ const sequelize = require("../../config/connection");
 router.get("/", (req, res) => {
   console.log("======================");
   Post.findAll({
-    order: [['created_at', 'DESC']],
+    order: [["created_at", "DESC"]],
     attributes: [
-      'id',
-      'post_url',
-      'title',
-      'created_at',
-      [sequelize.literal('(SELECT COUNT(*) FROM vote WHERE post.id = vote.post_id)'), 'vote_count']
+      "id",
+      "post_url",
+      "title",
+      "created_at",
+      [
+        sequelize.literal(
+          "(SELECT COUNT(*) FROM vote WHERE post.id = vote.post_id)"
+        ),
+        "vote_count",
+      ],
     ],
     include: [
       // include the Comment model here:
       {
         model: Comment,
-        attributes: ['id', 'comment_text', 'post_id', 'user_id', 'created_at'],
+        attributes: ["id", "comment_text", "post_id", "user_id", "created_at"],
         include: {
           model: User,
-          attributes: ['username']
-        }
+          attributes: ["username"],
+        },
       },
       {
         model: User,
-        attributes: ['username']
-      }
-    ]
-   })
+        attributes: ["username"],
+      },
+    ],
+  })
     .then((dbPostData) => res.json(dbPostData))
     .catch((err) => {
       console.log(err);
@@ -62,12 +67,12 @@ router.get("/:id", (req, res) => {
       },
       {
         model: Comment,
-        attributes: ['id', 'comment_text', 'post_id', 'user_id', 'created_at'],
+        attributes: ["id", "comment_text", "post_id", "user_id", "created_at"],
         include: {
           model: User,
-          attributes: ['username']
-        }
-      }
+          attributes: ["username"],
+        },
+      },
     ],
   })
     .then((dbPostData) => {
@@ -100,14 +105,19 @@ router.post("/", (req, res) => {
 
 // PUT /api/posts/upvote (VOTE ON POST MEANS TO UPDATE WITH NEW VOTE)
 router.put("/upvote", (req, res) => {
-  // custom static method created in models/Post.js
-  Post.upvote(req.body, { Vote })
-
-    .then((updatedPostData) => res.json(updatedPostData))
-    .catch((err) => {
-      console.log(err);
-      res.status(400).json(err);
-    });
+  // make sure the session exists first
+  if (req.session) {
+    // pass session id along with all destructured properties on req.body
+    Post.upvote(
+      { ...req.body, user_id: req.session.user_id },
+      { Vote, Comment, User }
+    )
+      .then((updatedVoteData) => res.json(updatedVoteData))
+      .catch((err) => {
+        console.log(err);
+        res.status(500).json(err);
+      });
+  }
 });
 
 // Update a post title by id param
