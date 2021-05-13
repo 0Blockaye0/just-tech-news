@@ -18,7 +18,8 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 const exphbs = require('express-handlebars');
 const { Session } = require('express-session');
-const hbs = exphbs.create({});
+const helpers = require('./utils/helpers');
+const hbs = exphbs.create({ helpers });
 
 // MIDDLEWARE
 app.engine('handlebars', hbs.engine);
